@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, NamedTuple, Iterator, overload
 
 import toml
+import typer
 from PIL import Image, ImageDraw, ImageFont
 
 
@@ -52,6 +53,7 @@ class Drawer:
 
 Schedule = list[ScheduleEntry]
 Avatars = dict[str, Path]
+
 
 def translate(position: Position, delta: tuple[int, int]) -> Position:
     dx, dy = delta
@@ -135,8 +137,8 @@ def draw_schedule_entry(
     )
 
     with Image.open(avatar_path) as avatar:
-        desired_height = height - 2*style.stroke_width - 4
-        proportion = desired_height/avatar.height
+        desired_height = height - 2 * style.stroke_width - 4
+        proportion = desired_height / avatar.height
         desired_width = int(avatar.width * proportion)
         resized = avatar.resize((desired_height, desired_width))
 
@@ -188,12 +190,13 @@ class AnnouncementStyle:
 
 
 def draw_announcement(
-    base: Image.Image, day_schedule: DaySchedule, *, avatars: Avatars, style: AnnouncementStyle
+    base: Image.Image,
+    day_schedule: DaySchedule,
+    *,
+    avatars: Avatars,
+    style: AnnouncementStyle,
 ) -> None:
-    drawer = Drawer(
-        image=base,
-        drawer=ImageDraw.Draw(base)
-    )
+    drawer = Drawer(image=base, drawer=ImageDraw.Draw(base))
 
     draw_text_by_center(
         drawer,
@@ -219,74 +222,79 @@ TomlPath = list[str]
 
 def load_font_from_toml(toml_dict: TomlDict) -> ImageFont.FreeTypeFont:
     return ImageFont.truetype(
-        toml_dict['file'],
-        size = toml_dict['size'],
+        toml_dict["file"],
+        size=toml_dict["size"],
     )
 
 
 def load_position_from_toml(toml_dict: TomlDict) -> Position:
     return Position(
-        x=toml_dict['x'],
-        y=toml_dict['y'],
+        x=toml_dict["x"],
+        y=toml_dict["y"],
     )
 
 
 def load_rgb_color_from_toml(toml_dict: TomlDict) -> RGBColor:
     return RGBColor(
-        r=toml_dict['r'],
-        g=toml_dict['g'],
-        b=toml_dict['b'],
+        r=toml_dict["r"],
+        g=toml_dict["g"],
+        b=toml_dict["b"],
     )
 
 
-def main() -> None:
-    avatars = {
-        'vinnydays': Path('./streamer.png'),
-        'ponzuzuju': Path('./streamer.png'),
-        'gamerdeesquerda': Path('./streamer.png'),
-        '0froggy': Path('./streamer.png'),
-    }
+APP = typer.Typer()
 
-    schedule = [
-        ScheduleEntry("twitch.tv", "vinnydays", datetime.time(hour=13, minute=00)),
-        ScheduleEntry("twitch.tv", "ponzuzuju", datetime.time(hour=17, minute=00)),
-        ScheduleEntry(
-            "twitch.tv", "gamerdeesquerda", datetime.time(hour=18, minute=00)
-        ),
-        ScheduleEntry("twitch.tv", "0froggy", datetime.time(hour=21, minute=00)),
-    ]
 
-    day_schedule = DaySchedule("quarta", schedule)
+@APP.command()
+def main(weekday: str, streams: list[str], config_file: Path = Path('schedgen.toml')) -> None:
+    with config_file.open() as f:
+        config = toml.load(f)["schedgen"]
 
-    with open('style.toml') as f:
-        raw_announcement_style = toml.load(f)['schedgen']
-
-    raw_style = raw_announcement_style['style']
-    raw_entry_style = raw_announcement_style['entry_style']
+    raw_style = config["style"]
+    raw_entry_style = config["entry_style"]
 
     style = AnnouncementStyle(
-        weekday_font=load_font_from_toml(raw_style['weekday_font']),
-        schedule_total_height=raw_style['schedule_height'],
-        schedule_y=raw_style['schedule_y'],
+        weekday_font=load_font_from_toml(raw_style["weekday_font"]),
+        schedule_total_height=raw_style["schedule_height"],
+        schedule_y=raw_style["schedule_y"],
         entry_style=EntryStyle(
-            stroke_width=raw_entry_style['stroke_width'],
-            max_height=raw_entry_style['max_height'],
-            min_spacing=raw_entry_style['min_spacing'],
-            width=raw_entry_style['width'],
-            stroke_color=load_rgb_color_from_toml(raw_entry_style['stroke_color']),
-            url_font=load_font_from_toml(raw_entry_style['url_font']),
-            time_font=load_font_from_toml(raw_entry_style['time_font']),
-            url_position=load_position_from_toml(raw_entry_style['url_position']),
-            time_position=load_position_from_toml(raw_entry_style['time_position']),
-            avatar_x=raw_entry_style['avatar_x'],
+            stroke_width=raw_entry_style["stroke_width"],
+            max_height=raw_entry_style["max_height"],
+            min_spacing=raw_entry_style["min_spacing"],
+            width=raw_entry_style["width"],
+            stroke_color=load_rgb_color_from_toml(raw_entry_style["stroke_color"]),
+            url_font=load_font_from_toml(raw_entry_style["url_font"]),
+            time_font=load_font_from_toml(raw_entry_style["time_font"]),
+            url_position=load_position_from_toml(raw_entry_style["url_position"]),
+            time_position=load_position_from_toml(raw_entry_style["time_position"]),
+            avatar_x=raw_entry_style["avatar_x"],
         ),
     )
 
+    streamers = config["streamers"]
+    avatars = {streamer: Path(info["avatar"]) for streamer, info in streamers.items()}
+
+    raw_stream_entries = [e.split(";", maxsplit=1) for e in streams]
+    stream_entries = [
+        (username, time.split(":")) for username, time in raw_stream_entries
+    ]
+
+    schedule = [
+        ScheduleEntry(
+            streamers[username]["service"],
+            username,
+            datetime.time(hour=int(h), minute=int(m)),
+        )
+        for username, (h, m) in stream_entries
+    ]
+
+    day_schedule = DaySchedule(weekday, sorted(schedule, key=lambda e: e.time))
+
     with Image.open("background.png") as base:
-        as_rgba = base.convert(mode='RGBA')
+        as_rgba = base.convert(mode="RGBA")
         draw_announcement(as_rgba, day_schedule, avatars=avatars, style=style)
         as_rgba.save("generated.png")
 
 
 if __name__ == "__main__":
-    main()
+    APP()
