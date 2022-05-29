@@ -5,6 +5,9 @@ description = "Schedule generator for streaming teams"
 authors = ["Tarcísio Eduardo Moreira Crocomo <tarcisioe@pm.me>"]
 readme = "README.md"
 
+[tool.poetry.scripts]
+schedgen = "schedgen:APP"
+
 [tool.poetry.dependencies]
 python = "^3.10"
 Pillow = "^9.1.1"
