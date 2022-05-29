@@ -1,8 +1,9 @@
 import datetime
 from dataclasses import dataclass
 from pathlib import Path
-from typing import NamedTuple, Iterator, overload
+from typing import Any, NamedTuple, Iterator, overload
 
+import toml
 from PIL import Image, ImageDraw, ImageFont
 
 
@@ -212,6 +213,32 @@ def draw_announcement(
     )
 
 
+TomlDict = dict[str, Any]
+TomlPath = list[str]
+
+
+def load_font_from_toml(toml_dict: TomlDict) -> ImageFont.FreeTypeFont:
+    return ImageFont.truetype(
+        toml_dict['file'],
+        size = toml_dict['size'],
+    )
+
+
+def load_position_from_toml(toml_dict: TomlDict) -> Position:
+    return Position(
+        x=toml_dict['x'],
+        y=toml_dict['y'],
+    )
+
+
+def load_rgb_color_from_toml(toml_dict: TomlDict) -> RGBColor:
+    return RGBColor(
+        r=toml_dict['r'],
+        g=toml_dict['g'],
+        b=toml_dict['b'],
+    )
+
+
 def main() -> None:
     avatars = {
         'vinnydays': Path('./streamer.png'),
@@ -231,21 +258,27 @@ def main() -> None:
 
     day_schedule = DaySchedule("quarta", schedule)
 
+    with open('style.toml') as f:
+        raw_announcement_style = toml.load(f)['schedgen']
+
+    raw_style = raw_announcement_style['style']
+    raw_entry_style = raw_announcement_style['entry_style']
+
     style = AnnouncementStyle(
-        weekday_font=ImageFont.truetype("Hack-Bold.ttf", size=50),
-        schedule_total_height=458,
-        schedule_y=87,
+        weekday_font=load_font_from_toml(raw_style['weekday_font']),
+        schedule_total_height=raw_style['schedule_height'],
+        schedule_y=raw_style['schedule_y'],
         entry_style=EntryStyle(
-            stroke_width=7,
-            max_height=123,
-            min_spacing=7,
-            width=285,
-            stroke_color=RGBColor(238, 17, 75),
-            url_font=ImageFont.truetype("Hack-Regular.ttf", size=16),
-            time_font=ImageFont.truetype("Hack-Bold.ttf", size=20),
-            url_position=Position(-50, 0),
-            time_position=Position(-50, -20),
-            avatar_x=80,
+            stroke_width=raw_entry_style['stroke_width'],
+            max_height=raw_entry_style['max_height'],
+            min_spacing=raw_entry_style['min_spacing'],
+            width=raw_entry_style['width'],
+            stroke_color=load_rgb_color_from_toml(raw_entry_style['stroke_color']),
+            url_font=load_font_from_toml(raw_entry_style['url_font']),
+            time_font=load_font_from_toml(raw_entry_style['time_font']),
+            url_position=load_position_from_toml(raw_entry_style['url_position']),
+            time_position=load_position_from_toml(raw_entry_style['time_position']),
+            avatar_x=raw_entry_style['avatar_x'],
         ),
     )
 
