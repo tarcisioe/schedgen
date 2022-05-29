@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "schedgen"
+version = "0.1.0"
+description = "Schedule generator for streaming teams"
+authors = ["Tarcísio Eduardo Moreira Crocomo <tarcisioe@pm.me>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+Pillow = "^9.1.1"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+mypy = "^0.960"
+black = "^22.3.0"
+types-Pillow = "^9.0.19"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
