@@ -1,7 +1,7 @@
 import datetime
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, NamedTuple, Iterator, overload
+from typing import Any, NamedTuple, Iterator
 
 import toml
 import typer
@@ -83,7 +83,7 @@ def allocate_y_and_heights(
         entry_height = max_entry_height - subtract_from_entry
 
     current = start
-    for i in range(n_entries):
+    for _ in range(n_entries):
         yield current, entry_height
         current += spacing + entry_height
 
@@ -246,7 +246,9 @@ APP = typer.Typer()
 
 
 @APP.command()
-def main(weekday: str, streams: list[str], config_file: Path = Path('schedgen.toml')) -> None:
+def main(
+    weekday: str, streams: list[str], config_file: Path = Path("schedgen.toml"),
+) -> None:
     with config_file.open() as f:
         config = toml.load(f)["schedgen"]
 
@@ -294,7 +296,3 @@ def main(weekday: str, streams: list[str], config_file: Path = Path('schedgen.to
         as_rgba = base.convert(mode="RGBA")
         draw_announcement(as_rgba, day_schedule, avatars=avatars, style=style)
         as_rgba.save("generated.png")
-
-
-if __name__ == "__main__":
-    APP()
