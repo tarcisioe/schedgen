@@ -325,6 +325,7 @@ APP = typer.Typer()
 def main(
     weekday: str,
     streams: list[str],
+    background: Path = Path("background.png"),
     config_file: Path = Path("schedgen.toml"),
 ) -> None:
     """A schedule announcement generator for streamer teams."""
@@ -372,7 +373,7 @@ def main(
 
     day_schedule = DaySchedule(weekday, sorted(schedule, key=lambda e: e.time))
 
-    with Image.open("background.png") as base:
+    with Image.open(background) as base:
         as_rgba = base.convert(mode="RGBA")
         draw_announcement(as_rgba, day_schedule, avatars=avatars, style=style)
         as_rgba.save("generated.png")
