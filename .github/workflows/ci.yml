@@ -29,8 +29,8 @@ jobs:
           pip install poetry
           poetry install
 
-      - name: Run tests
-        run: poetry run summon lint
+      - name: Run static checks
+        run: poetry run summon static-checks
 
 
   test:
