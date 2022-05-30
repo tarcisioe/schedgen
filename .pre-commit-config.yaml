@@ -1,0 +1,20 @@
+repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v2.3.0
+  hooks:
+  - id: check-yaml
+  - id: end-of-file-fixer
+  - id: trailing-whitespace
+- repo: local
+  hooks:
+  - id: linters
+    name: Lint
+    entry: poetry run summon lint --no-full-report
+    language: system
+    types: [python]
+    require_serial: true
+  - id: formatters
+    name: Format
+    entry: poetry run summon format
+    language: system
+    types: [python]

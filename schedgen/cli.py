@@ -2,7 +2,7 @@
 import datetime
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, NamedTuple, Iterator
+from typing import Any, Iterator, NamedTuple
 
 import toml
 import typer
@@ -11,18 +11,21 @@ from PIL import Image, ImageDraw, ImageFont
 
 class Size(NamedTuple):
     """The size of a rectangle."""
+
     width: int
     height: int
 
 
 class Position(NamedTuple):
     """A 2D cartesian position."""
+
     x: int
     y: int
 
 
 class RGBColor(NamedTuple):
     """An RGB colorspace color."""
+
     r: int
     g: int
     b: int
@@ -31,6 +34,7 @@ class RGBColor(NamedTuple):
 @dataclass(frozen=True)
 class ScheduleEntry:
     """An entry on the streamer schedule."""
+
     streaming_service_url: str
     username: str
     time: datetime.time
@@ -39,6 +43,7 @@ class ScheduleEntry:
 @dataclass
 class EntryStyle:
     """The style of each entry on the schedule."""
+
     stroke_width: int
     max_height: int
     min_spacing: int
@@ -54,6 +59,7 @@ class EntryStyle:
 @dataclass
 class Drawer:
     """A helper object for aggregating an Image and an ImageDraw objects."""
+
     image: Image.Image
     drawer: ImageDraw.ImageDraw
 
@@ -233,6 +239,7 @@ def draw_schedule(
 @dataclass
 class DaySchedule:
     """The schedule to draw, given a weekday and the entries."""
+
     day: str
     schedule: Schedule
 
@@ -240,6 +247,7 @@ class DaySchedule:
 @dataclass
 class AnnouncementStyle:
     """The style for the image."""
+
     weekday_font: ImageFont.FreeTypeFont
     schedule_y: int
     schedule_total_height: int
@@ -315,10 +323,13 @@ APP = typer.Typer()
 
 @APP.command()
 def main(
-    weekday: str, streams: list[str], config_file: Path = Path("schedgen.toml"),
+    weekday: str,
+    streams: list[str],
+    config_file: Path = Path("schedgen.toml"),
 ) -> None:
     """A schedule announcement generator for streamer teams."""
-    with config_file.open(encoding='utf8') as f:
+    with config_file.open(encoding="utf8") as f:
+
         config = toml.load(f)["schedgen"]
 
     raw_style = config["style"]
