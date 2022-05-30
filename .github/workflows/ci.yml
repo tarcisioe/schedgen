@@ -10,7 +10,8 @@ jobs:
       matrix:
         python: ['3.10']
         os: [ubuntu-latest, windows-latest]
-      name: Python ${{ matrix.python }} on ${{ matrix.os }}
+
+    name: Python ${{ matrix.python }} on ${{ matrix.os }}
 
     runs-on: ${{ matrix.os }}
 
