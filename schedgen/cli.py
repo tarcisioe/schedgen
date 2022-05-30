@@ -1,3 +1,4 @@
+"""Main module."""
 import datetime
 from dataclasses import dataclass
 from pathlib import Path
@@ -9,16 +10,19 @@ from PIL import Image, ImageDraw, ImageFont
 
 
 class Size(NamedTuple):
+    """The size of a rectangle."""
     width: int
     height: int
 
 
 class Position(NamedTuple):
+    """A 2D cartesian position."""
     x: int
     y: int
 
 
 class RGBColor(NamedTuple):
+    """An RGB colorspace color."""
     r: int
     g: int
     b: int
@@ -26,6 +30,7 @@ class RGBColor(NamedTuple):
 
 @dataclass(frozen=True)
 class ScheduleEntry:
+    """An entry on the streamer schedule."""
     streaming_service_url: str
     username: str
     time: datetime.time
@@ -33,6 +38,7 @@ class ScheduleEntry:
 
 @dataclass
 class EntryStyle:
+    """The style of each entry on the schedule."""
     stroke_width: int
     max_height: int
     min_spacing: int
@@ -47,6 +53,7 @@ class EntryStyle:
 
 @dataclass
 class Drawer:
+    """A helper object for aggregating an Image and an ImageDraw objects."""
     image: Image.Image
     drawer: ImageDraw.ImageDraw
 
@@ -56,6 +63,15 @@ Avatars = dict[str, Path]
 
 
 def translate(position: Position, delta: tuple[int, int]) -> Position:
+    """Translate a position on space.
+
+    Args:
+        position: The base position.
+        delta: How much to translate on each coordinate.
+
+    Returns:
+        A new position.
+    """
     dx, dy = delta
     return Position(position.x + dx, position.y + dy)
 
@@ -67,6 +83,17 @@ def allocate_y_and_heights(
     n_entries: int,
     min_spacing: int,
 ) -> Iterator[tuple[int, int]]:
+    """Allocate space for each entry given some constraints.
+
+    Args:
+        total_height: How much vertical space is available (in pixels).
+        max_entry_height: The maximum height for each schedule entry.
+        n_entries: How many entries to distribute.
+        min_spacing: The minimum spacing between each entry.
+
+    Yields:
+        Position and height for each entry.
+    """
     n_spaces = n_entries - 1
     min_total_spacing = n_spaces * min_spacing
     max_total_entry_height = n_entries * max_entry_height
@@ -95,6 +122,14 @@ def draw_text_by_center(
     position: Position,
     font: ImageFont.FreeTypeFont,
 ) -> None:
+    """Draw text on an image given its top-center position.
+
+    Args:
+        drawer: The Drawer object for drawing.
+        text: What to write.
+        position: Where to position the text on the image.
+        font: Which font to use to write.
+    """
     width, _ = font.getsize_multiline(text)
     true_position = translate(position, Size(-width // 2, 0))
 
@@ -110,6 +145,16 @@ def draw_schedule_entry(
     height: int,
     style: EntryStyle,
 ) -> None:
+    """Draw a schedule entry given its top-left position.
+
+    Args:
+        drawer: The Drawer object for drawing.
+        entry: The schedule entry to draw.
+        avatar_path: Which avatar to use for this entry.
+        position: Where to position the entry on the image.
+        height: Which height should the entry have.
+        style: The style to use for drawing the entry.
+    """
     size = Size(style.width, height)
 
     drawer.drawer.rectangle(
@@ -157,6 +202,16 @@ def draw_schedule(
     total_height: int,
     style: EntryStyle,
 ) -> None:
+    """Draw a schedule on an image given its top-left position.
+
+    Args:
+        drawer: The Drawer object for drawing.
+        schedule: The schedule to draw on the image.
+        avatars: The avatar mapping for the streamers.
+        position: Where to position the schedule on the image.
+        total_height: The total height available to draw the schedule.
+        entry_style: The style to use for each entry.
+    """
     ys_and_heights = allocate_y_and_heights(
         total_height=total_height,
         max_entry_height=style.max_height,
@@ -177,12 +232,14 @@ def draw_schedule(
 
 @dataclass
 class DaySchedule:
+    """The schedule to draw, given a weekday and the entries."""
     day: str
     schedule: Schedule
 
 
 @dataclass
 class AnnouncementStyle:
+    """The style for the image."""
     weekday_font: ImageFont.FreeTypeFont
     schedule_y: int
     schedule_total_height: int
@@ -196,6 +253,14 @@ def draw_announcement(
     avatars: Avatars,
     style: AnnouncementStyle,
 ) -> None:
+    """Draw the schedule announcement image.
+
+    Args:
+        base: The image to use as the background.
+        day_schedule: The schedule information to draw.
+        avatars: The avatar mapping for the streamers.
+        style: The style to use for drawing the announcement.
+    """
     drawer = Drawer(image=base, drawer=ImageDraw.Draw(base))
 
     draw_text_by_center(
@@ -221,6 +286,7 @@ TomlPath = list[str]
 
 
 def load_font_from_toml(toml_dict: TomlDict) -> ImageFont.FreeTypeFont:
+    """Load a FreeTypeFont from a toml-loaded dict."""
     return ImageFont.truetype(
         toml_dict["file"],
         size=toml_dict["size"],
@@ -228,6 +294,7 @@ def load_font_from_toml(toml_dict: TomlDict) -> ImageFont.FreeTypeFont:
 
 
 def load_position_from_toml(toml_dict: TomlDict) -> Position:
+    """Load a Position from a toml-loaded dict."""
     return Position(
         x=toml_dict["x"],
         y=toml_dict["y"],
@@ -235,6 +302,7 @@ def load_position_from_toml(toml_dict: TomlDict) -> Position:
 
 
 def load_rgb_color_from_toml(toml_dict: TomlDict) -> RGBColor:
+    """Load an RGBColor from a toml-loaded dict."""
     return RGBColor(
         r=toml_dict["r"],
         g=toml_dict["g"],
@@ -249,7 +317,8 @@ APP = typer.Typer()
 def main(
     weekday: str, streams: list[str], config_file: Path = Path("schedgen.toml"),
 ) -> None:
-    with config_file.open() as f:
+    """A schedule announcement generator for streamer teams."""
+    with config_file.open(encoding='utf8') as f:
         config = toml.load(f)["schedgen"]
 
     raw_style = config["style"]
