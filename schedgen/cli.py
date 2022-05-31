@@ -196,7 +196,7 @@ def draw_schedule_entry(
         avatar_center_delta = Size(-resized.width // 2, -resized.height // 2)
         avatar_position = translate(center, avatar_center_delta)
         avatar_position = translate(avatar_position, Size(style.avatar_x, 0))
-        drawer.image.paste(resized, avatar_position, mask=resized)
+        drawer.image.paste(resized, avatar_position, mask=resized.convert(mode="RGBA"))
 
 
 def draw_schedule(
@@ -327,10 +327,10 @@ def main(
     streams: list[str],
     background: Path = Path("background.png"),
     config_file: Path = Path("schedgen.toml"),
+    output: Path = Path("generated.png"),
 ) -> None:
     """A schedule announcement generator for streamer teams."""
     with config_file.open(encoding="utf8") as f:
-
         config = toml.load(f)["schedgen"]
 
     raw_style = config["style"]
@@ -376,4 +376,4 @@ def main(
     with Image.open(background) as base:
         as_rgba = base.convert(mode="RGBA")
         draw_announcement(as_rgba, day_schedule, avatars=avatars, style=style)
-        as_rgba.save("generated.png")
+        as_rgba.save(output)
