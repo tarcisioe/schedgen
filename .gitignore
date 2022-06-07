@@ -1,5 +1,6 @@
 __pycache__/
 *.png
 !example.png
+!demo/*
 schedgen.toml
 .coverage
