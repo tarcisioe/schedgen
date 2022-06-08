@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "schedgen"
-version = "0.1.0"
+version = "0.1.1"
 description = "Schedule generator for streaming teams"
 authors = ["Tarcísio Eduardo Moreira Crocomo <tarcisioe@pm.me>"]
 readme = "README.md"

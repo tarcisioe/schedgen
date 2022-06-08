@@ -54,6 +54,7 @@ class EntryStyle:
     url_position: Position
     time_position: Position
     avatar_x: int
+    avatar_margin: int
 
 
 @dataclass
@@ -188,7 +189,7 @@ def draw_schedule_entry(
     )
 
     with Image.open(avatar_path) as avatar:
-        desired_height = height - 2 * style.stroke_width - 4
+        desired_height = height - 2 * style.stroke_width - style.avatar_margin * 2
         proportion = desired_height / avatar.height
         desired_width = int(avatar.width * proportion)
         resized = avatar.resize((desired_height, desired_width))
@@ -249,6 +250,7 @@ class AnnouncementStyle:
     """The style for the image."""
 
     weekday_font: ImageFont.FreeTypeFont
+    weekday_y: int
     schedule_y: int
     schedule_total_height: int
     entry_style: EntryStyle
@@ -273,7 +275,7 @@ def draw_announcement(
 
     draw_text_by_center(
         drawer,
-        position=Position(base.width // 2, 10),
+        position=Position(base.width // 2, style.weekday_y),
         text=day_schedule.day.upper(),
         font=style.weekday_font,
     )
@@ -338,6 +340,7 @@ def main(
 
     style = AnnouncementStyle(
         weekday_font=load_font_from_toml(raw_style["weekday_font"]),
+        weekday_y=raw_style["weekday_y"],
         schedule_total_height=raw_style["schedule_height"],
         schedule_y=raw_style["schedule_y"],
         entry_style=EntryStyle(
@@ -351,6 +354,7 @@ def main(
             url_position=load_position_from_toml(raw_entry_style["url_position"]),
             time_position=load_position_from_toml(raw_entry_style["time_position"]),
             avatar_x=raw_entry_style["avatar_x"],
+            avatar_margin=raw_entry_style["avatar_margin"],
         ),
     )
 
