@@ -37,6 +37,7 @@ class ScheduleEntry:
 
     streaming_service_url: str
     username: str
+    avatar_path: Path
     time: datetime.time
 
 
@@ -66,7 +67,6 @@ class Drawer:
 
 
 Schedule = list[ScheduleEntry]
-Avatars = dict[str, Path]
 
 
 def translate(position: Position, delta: tuple[int, int]) -> Position:
@@ -204,7 +204,6 @@ def draw_schedule(
     drawer: Drawer,
     schedule: Schedule,
     *,
-    avatars: Avatars,
     position: Position,
     total_height: int,
     style: EntryStyle,
@@ -214,7 +213,6 @@ def draw_schedule(
     Args:
         drawer: The Drawer object for drawing.
         schedule: The schedule to draw on the image.
-        avatars: The avatar mapping for the streamers.
         position: Where to position the schedule on the image.
         total_height: The total height available to draw the schedule.
         entry_style: The style to use for each entry.
@@ -233,7 +231,7 @@ def draw_schedule(
             position=translate(position, Size(0, y_delta)),
             height=height,
             style=style,
-            avatar_path=avatars[entry.username],
+            avatar_path=entry.avatar_path,
         )
 
 
@@ -260,7 +258,6 @@ def draw_announcement(
     base: Image.Image,
     day_schedule: DaySchedule,
     *,
-    avatars: Avatars,
     style: AnnouncementStyle,
 ) -> None:
     """Draw the schedule announcement image.
@@ -268,7 +265,6 @@ def draw_announcement(
     Args:
         base: The image to use as the background.
         day_schedule: The schedule information to draw.
-        avatars: The avatar mapping for the streamers.
         style: The style to use for drawing the announcement.
     """
     drawer = Drawer(image=base, drawer=ImageDraw.Draw(base))
@@ -282,7 +278,6 @@ def draw_announcement(
     draw_schedule(
         drawer,
         day_schedule.schedule,
-        avatars=avatars,
         position=Position(
             base.width // 2 - style.entry_style.width // 2, y=style.schedule_y
         ),
@@ -359,7 +354,9 @@ def main(
     )
 
     streamers = config["streamers"]
-    avatars = {streamer: Path(info["avatar"]) for streamer, info in streamers.items()}
+    username_override = {
+        streamer: info.get("username") for streamer, info in streamers.items()
+    }
 
     raw_stream_entries = [e.split(";", maxsplit=1) for e in streams]
     stream_entries = [
@@ -368,16 +365,21 @@ def main(
 
     schedule = [
         ScheduleEntry(
-            streamers[username]["service"],
-            username,
-            datetime.time(hour=int(h), minute=int(m)),
+            streaming_service_url=streamers[streamer]["service"],
+            username=(
+                streamer
+                if (override := username_override[streamer]) is None
+                else override
+            ),
+            avatar_path=Path(streamers[streamer]["avatar"]),
+            time=datetime.time(hour=int(h), minute=int(m)),
         )
-        for username, (h, m) in stream_entries
+        for streamer, (h, m) in stream_entries
     ]
 
     day_schedule = DaySchedule(weekday, sorted(schedule, key=lambda e: e.time))
 
     with Image.open(background) as base:
         as_rgba = base.convert(mode="RGBA")
-        draw_announcement(as_rgba, day_schedule, avatars=avatars, style=style)
+        draw_announcement(as_rgba, day_schedule, style=style)
         as_rgba.save(output)
